@@ -1,1 +1,14 @@
 node_modules ignored
+node_modules
+.env
+ANTIGRAVITY_PROMPT.md
+BACKEND_PROMPT.md
+FRONTEND_DESIGN_PROMPT.md
+FRONTEND_WIRE_PROMPT.md
+PHASE3_DEMO_PROMPT.md
+fix.js
+refactor.js
+rewriteRoutes.js
+test.js
+test_clean.js
+updateHtml.js
