@@ -1,0 +1,21 @@
+{
+  "name": "weathergpt",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+  "start": "node src/app.js",
+  "dev": "node src/app.js"
+},
+  "keywords": [],
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "node-fetch": "^2.7.0"
+  }
+}
