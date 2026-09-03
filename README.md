@@ -36,49 +36,52 @@ The backend parses intent, fetches data through a provider fallback chain, and r
 | Framework | Express |
 | Clients | node-fetch |
 | Config | dotenv |
-| Browser | Vanilla HTML/CSS/JS served from `/public` |
+| Frontend | React + Vite |
 
 ## Project Structure
 
 ```
 weathergpt/
-├── src/
-│   ├── app.js                 # Express app setup, middleware, routes
-│   ├── config/
-│   │   └── env.js             # Environment configuration
-│   ├── routes/
-│   │   ├── chat.js            # Natural language weather chat
-│   │   ├── weather.js         # Direct weather data endpoints
-│   │   ├── geocode.js         # Location search and reverse geocoding
-│   │   ├── alerts.js          # Weather alerts management
-│   │   ├── subscribe.js       # Alert subscription handlers
-│   │   ├── stream.js          # SSE alert streaming
-│   │   └── climate.js         # Climate data endpoints
-│   ├── services/
-│   │   ├── weatherService.js  # Orchestrates weather provider chain
-│   │   ├── weatherApiService.js
-│   │   ├── openWeatherMapService.js
-│   │   ├── llmService.js      # Intent parsing and response generation
-│   │   ├── intentService.js   # Query intent classification
-│   │   ├── climateService.js  # Climate data aggregation
-│   │   ├── geocodeService.js  # Location resolution
-│   │   ├── alertService.js    # Alert evaluation logic
-│   │   └── alertSubscriptionService.js
-│   ├── middleware/
-│   │   ├── validator.js       # Input validation
-│   │   ├── asyncWrapper.js    # Async error catching
-│   │   ├── requestLogger.js   # Request logging
-│   │   └── errorHandler.js    # Centralized error formatting
-│   └── utils/
-│       ├── fetcher.js         # HTTP fetch wrapper with retries
-│       ├── cache.js           # In-memory caching layer
-│       ├── logger.js          # Structured logging
-│       └── weatherCodes.js    # WMO weather code mappings
-├── public/                    # Frontend assets
-├── tests/                     # Test suite
+├── server/
+│   ├── src/
+│   │   ├── app.js                 # Express app setup, middleware, routes
+│   │   ├── config/
+│   │   │   └── env.js             # Environment configuration
+│   │   ├── routes/
+│   │   │   ├── chat.js            # Natural language weather chat
+│   │   │   ├── weather.js         # Direct weather data endpoints
+│   │   │   ├── geocode.js         # Location search and reverse geocoding
+│   │   │   ├── alerts.js          # Weather alerts management
+│   │   │   ├── subscribe.js       # Alert subscription handlers
+│   │   │   ├── stream.js          # SSE alert streaming
+│   │   │   └── climate.js         # Climate data endpoints
+│   │   ├── services/
+│   │   │   ├── weatherService.js  # Orchestrates weather provider chain
+│   │   │   ├── weatherApiService.js
+│   │   │   ├── openWeatherMapService.js
+│   │   │   ├── llmService.js      # Intent parsing and response generation
+│   │   │   ├── intentService.js   # Query intent classification
+│   │   │   ├── climateService.js  # Climate data aggregation
+│   │   │   ├── geocodeService.js  # Location resolution
+│   │   │   ├── alertService.js    # Alert evaluation logic
+│   │   │   └── alertSubscriptionService.js
+│   │   ├── middleware/
+│   │   │   ├── validator.js       # Input validation
+│   │   │   ├── asyncWrapper.js    # Async error catching
+│   │   │   ├── requestLogger.js   # Request logging
+│   │   │   └── errorHandler.js    # Centralized error formatting
+│   │   └── utils/
+│   │       ├── fetcher.js         # HTTP fetch wrapper with retries
+│   │       ├── cache.js           # In-memory caching layer
+│   │       ├── logger.js          # Structured logging
+│   │       └── weatherCodes.js    # WMO weather code mappings
+│   └── tests/                     # Test suite
+├── client/                        # React + Vite frontend
 ├── package.json
 ├── Dockerfile
-└── .env                       # API keys and config
+├── .dockerignore
+├── .env.example
+└── README.md
 ```
 
 ## Weather Provider Chain
@@ -96,16 +99,17 @@ If one provider is rate-limited, down, or missing an API key, the service automa
 ```bash
 # 1. Install dependencies
 npm install
+cd client && npm install && cd ..
 
 # 2. Configure environment
 cp .env.example .env
-# Add your API keys: WEATHERAPI_KEY, OPENWEATHER_API_KEY, OPENAI_API_KEY
+# Add your API keys: WEATHERAPI_API_KEY, OPENWEATHERMAP_API_KEY, OPENAI_API_KEY
 
-# 3. Start the server
-npm start
+# 3. Start backend
+npm run dev
 
-# 4. Open the app
-open http://localhost:3000
+# 4. Start frontend in another terminal
+npm run dev:client
 ```
 
 ## Environment Variables
@@ -113,13 +117,13 @@ open http://localhost:3000
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `3000` | Server port |
-| `WEATHERAPI_KEY` | - | WeatherAPI key for current/forecast weather |
-| `OPENWEATHER_API_KEY` | - | OpenWeatherMap key for fallback weather data |
+| `WEATHERAPI_API_KEY` | - | WeatherAPI key for current/forecast weather |
+| `OPENWEATHERMAP_API_KEY` | - | OpenWeatherMap key for fallback weather data |
 | `OPENAI_API_KEY` | - | OpenAI key for natural language intent parsing |
 | `CORS_ORIGIN` | `*` | CORS allowed origins |
 | `NODE_ENV` | `development` | Environment mode |
 
-See `src/config/env.js` for the full list.
+See `server/src/config/env.js` for the full list.
 
 ## API Endpoints
 
@@ -157,11 +161,14 @@ City name to coordinates and metadata.
 ## Development
 
 ```bash
-# Run in development mode
+# Run backend only
 npm run dev
 
-# Run tests
-npm test
+# Run frontend only
+npm run dev:client
+
+# Run both together
+npm run dev:all
 ```
 
 ## Docker
