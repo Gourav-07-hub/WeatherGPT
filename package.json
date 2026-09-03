@@ -1,15 +1,19 @@
 {
   "name": "weathergpt",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Conversational AI for weather forecasting, alerts, and climate information",
+  "main": "server/src/app.js",
   "directories": {
-    "test": "tests"
+    "test": "server/tests"
   },
   "scripts": {
-  "start": "node src/app.js",
-  "dev": "node src/app.js"
-},
+    "start": "node server/src/app.js",
+    "dev": "node server/src/app.js",
+    "dev:client": "npm --prefix client run dev",
+    "client:build": "npm --prefix client run build",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:client\"",
+    "test": "node --test server/tests"
+  },
   "keywords": [],
   "type": "commonjs",
   "dependencies": {
@@ -17,5 +21,8 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
   }
 }

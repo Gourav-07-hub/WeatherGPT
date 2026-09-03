@@ -2,7 +2,7 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 
-const rootDir = path.resolve(__dirname, '../../');
+const rootDir = path.resolve(__dirname, '../../../');
 ['.env.development', '.env.local', '.env'].forEach(file => {
   const fp = path.join(rootDir, file);
   if (fs.existsSync(fp)) dotenv.config({ path: fp });

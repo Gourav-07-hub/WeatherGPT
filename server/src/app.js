@@ -3,6 +3,7 @@ const requestLogger = require('./middleware/requestLogger');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const chatRouter = require('./routes/chat');
 const weatherRouter = require('./routes/weather');
 const geocodeRouter = require('./routes/geocode');
@@ -17,7 +18,7 @@ const app = express();
 app.use(cors({ origin: config.CORS_ORIGIN }));
 app.use(express.json());
 app.use(requestLogger);
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, '../../client/dist')));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 

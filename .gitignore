@@ -1,6 +1,19 @@
-node_modules ignored
+# Dependencies
 node_modules
+client/node_modules
+
+# Environment
 .env*
+client/dist
+
+# Logs
+npm-debug.log*
+*.log
+
+# OS
+.DS_Store
+
+# Scratch/docs
 ANTIGRAVITY_PROMPT.md
 BACKEND_PROMPT.md
 FRONTEND_DESIGN_PROMPT.md
