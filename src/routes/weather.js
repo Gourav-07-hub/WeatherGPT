@@ -34,10 +34,6 @@ router.get('/', asyncWrapper(async (req, res) => {
     weatherData.hourly = await getHourlyForecast(location.lat, location.lon, req.query.debug === 'true');
   }
   
-  // ALWAYS return them to be safe if not explicitly asked
-  weatherData.hourly = await getHourlyForecast(location.lat, location.lon, req.query.debug === 'true');
-  weatherData.daily = await getDailyForecast(location.lat, location.lon, 7, req.query.debug === 'true');
-  
   res.json(weatherData);
 }));
 

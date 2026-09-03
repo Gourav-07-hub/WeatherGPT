@@ -11,15 +11,18 @@ router.get('/', asyncWrapper(async (req, res) => {
 
   res.write('data: {"status":"connected"}\n\n');
 
+  const cityFilter = (req.query.city || '').toLowerCase().trim();
+
   const interval = setInterval(() => {
-    const alerts = [];
+    const matched = [];
     for (const sub of subscriptions) {
+      if (cityFilter && !sub.name.toLowerCase().includes(cityFilter)) continue;
       if (sub.lastAlerts && sub.lastAlerts.length > 0) {
-        alerts.push({ location: sub.name, alerts: sub.lastAlerts });
+        matched.push({ location: sub.name, alerts: sub.lastAlerts });
       }
     }
-    if (alerts.length > 0) {
-      res.write(`data: ${JSON.stringify({ type: 'alerts', alerts })}\n\n`);
+    if (matched.length > 0) {
+      res.write(`data: ${JSON.stringify({ type: 'alerts', alerts: matched })}\n\n`);
     } else {
       res.write('data: {"status":"ping"}\n\n');
     }

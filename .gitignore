@@ -1,6 +1,6 @@
 node_modules ignored
 node_modules
-.env
+.env*
 ANTIGRAVITY_PROMPT.md
 BACKEND_PROMPT.md
 FRONTEND_DESIGN_PROMPT.md
