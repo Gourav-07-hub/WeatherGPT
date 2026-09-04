@@ -1,4 +1,5 @@
-const BASE = '/api/auth'
+const API = import.meta.env.VITE_API_URL || ''
+const BASE = `${API}/api/auth`
 
 async function post(path, body) {
   const res = await fetch(`${BASE}${path}`, {
