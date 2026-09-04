@@ -64,17 +64,52 @@ export default function App() {
   useEffect(() => {
     if (loadedRef.current) return
     loadedRef.current = true
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) =>
-          loadWeather(`lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`, true).catch(() =>
-            loadWeather('Bhopal')
-          ),
-        () => loadWeather('Bhopal')
-      )
-    } else {
-      loadWeather('Bhopal')
+
+    const attempt = async () => {
+      if (navigator.geolocation) {
+        await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              try {
+                await loadWeather(`lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`, true)
+                resolve()
+              } catch (err) {
+                reject(err)
+              }
+            },
+            async () => {
+              try {
+                await loadWeather('Bhopal')
+                resolve()
+              } catch (err) {
+                reject(err)
+              }
+            }
+          )
+        })
+      } else {
+        await loadWeather('Bhopal')
+      }
     }
+
+    const run = async () => {
+      let attemptCount = 0
+      const maxAttempts = 2
+      while (attemptCount < maxAttempts) {
+        try {
+          await attempt()
+          return
+        } catch {
+          attemptCount++
+          if (attemptCount < maxAttempts) {
+            await new Promise(r => setTimeout(r, 1500))
+          }
+        }
+      }
+    }
+
+    const t = setTimeout(run, 300)
+    return () => clearTimeout(t)
   }, [loadWeather])
 
   useEffect(() => {
