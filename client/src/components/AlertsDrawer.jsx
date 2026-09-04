@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { fetchSubscriptions, addSubscription, removeSubscription, checkAlerts } from '../lib/api'
 
+function getSeverity(detail) {
+  const text = (detail || '').toLowerCase()
+  if (text.includes('red') || text.includes('extreme') || text.includes('severe') || text.includes('cyclone')) return 'red'
+  if (text.includes('orange') || text.includes('heavy') || text.includes('thunderstorm')) return 'orange'
+  if (text.includes('yellow') || text.includes('moderate') || text.includes('warning')) return 'yellow'
+  return 'green'
+}
+
 export default function AlertsDrawer({ open, onClose, currentLat, currentLon }) {
   const [subs, setSubs] = useState([])
   const [alerts, setAlerts] = useState([])
@@ -42,10 +50,8 @@ export default function AlertsDrawer({ open, onClose, currentLat, currentLon }) 
     refresh()
   }
 
-  if (!open) return null
-
   return (
-    <div className='drawer glass open' id='drawer-alerts'>
+    <div className={`drawer glass${open ? ' open' : ''}`} id='drawer-alerts'>
       <button className='drawer-close' onClick={onClose}>×</button>
       <h3>Alert Subscriptions</h3>
       <form className='subscribe-form' onSubmit={handleSubmit}>
@@ -75,11 +81,13 @@ export default function AlertsDrawer({ open, onClose, currentLat, currentLon }) 
         {alerts.filter((c) => c.alerts && c.alerts.length > 0).length > 0 ? (
           alerts
             .filter((c) => c.alerts && c.alerts.length > 0)
-            .map((c, i) => (
-              <div key={i} className='alert-danger'>
-                <strong>{c.name}</strong>: {c.alerts.map((a) => a.detail).join(', ')}
-              </div>
-            ))
+            .map((c, i) =>
+              c.alerts.map((a, j) => (
+                <div key={`${i}-${j}`} className={`alert-badge alert-${getSeverity(a.detail)}`}>
+                  <strong>{c.name}</strong>: {a.detail}
+                </div>
+              ))
+            )
         ) : (
           <i>No active alerts.</i>
         )}

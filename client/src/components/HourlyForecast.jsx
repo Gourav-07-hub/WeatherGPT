@@ -1,6 +1,17 @@
+import { useState, useEffect } from 'react'
 import { getWeatherIcon } from '../lib/weather'
 
 export default function HourlyForecast({ hourly, isF }) {
+  const [animate, setAnimate] = useState(false)
+
+  useEffect(() => {
+    if (hourly && hourly.time && hourly.time.length > 0) {
+      setAnimate(false)
+      const t = requestAnimationFrame(() => setAnimate(true))
+      return () => cancelAnimationFrame(t)
+    }
+  }, [hourly])
+
   if (!hourly || !hourly.time || hourly.time.length === 0) return null
 
   const now = new Date()
@@ -21,7 +32,7 @@ export default function HourlyForecast({ hourly, isF }) {
   return (
     <>
       <div className='timeline-title'>next 24 hours</div>
-      <div className='hourly-scroll' tabIndex='0'>
+      <div className={`hourly-scroll${animate ? ' animate' : ''}`} tabIndex='0'>
         {slices.map((h, i) => (
           <div className='tick' key={i}>
             <div className='time mono'>{h.time}</div>

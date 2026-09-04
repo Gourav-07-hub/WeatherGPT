@@ -15,7 +15,10 @@ const config = {
   OPENAI_BASE: process.env.OPENAI_BASE || 'https://api.openai.com',
   OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4o-mini',
   OPEN_METEO_BASE: process.env.OPEN_METEO_BASE || 'https://api.open-meteo.com',
-  NOMINATIM_BASE: process.env.NOMINATIM_BASE || 'https://nominatim.openstreetmap.org'
+  NOMINATIM_BASE: process.env.NOMINATIM_BASE || 'https://nominatim.openstreetmap.org',
+  MONGODB_URI: process.env.MONGODB_URI || '',
+  JWT_SECRET: process.env.JWT_SECRET || 'dev-secret-change-me',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d'
 };
 
 if (Number.isNaN(config.PORT)) throw new Error('PORT must be a number');

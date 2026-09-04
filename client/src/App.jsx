@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import SkyBackground from './components/SkyBackground'
 import Hero from './components/Hero'
 import HourlyForecast from './components/HourlyForecast'
@@ -6,11 +7,14 @@ import DailyForecast from './components/DailyForecast'
 import Chat from './components/Chat'
 import AlertsDrawer from './components/AlertsDrawer'
 import ClimateDrawer from './components/ClimateDrawer'
+import { useAuth } from './context/AuthContext'
 import { fetchWeather } from './lib/api'
 
 const SUGGESTIONS = ['will it rain today?', 'show me climate trends', 'any extreme alerts?']
 
 export default function App() {
+  const { isAuthenticated, user, initialLoading, logout } = useAuth()
+  const navigate = useNavigate()
   const [weather, setWeather] = useState(null)
   const [hourly, setHourly] = useState(null)
   const [daily, setDaily] = useState(null)
@@ -111,7 +115,7 @@ export default function App() {
       <SkyBackground weatherCode={weather?.current?.weather_code ?? 0} />
       <div className='app-container'>
         <header className='top-bar glass'>
-          <div className='brand'>WeatherGPT</div>
+          <Link to='/' className='brand'>WeatherGPT</Link>
           <div className='location-name'>{currentName}</div>
           <div className='controls'>
             <div className='utils'>
@@ -129,39 +133,68 @@ export default function App() {
               <span className={!isF ? 'active' : ''}>°C</span>
               <span className={isF ? 'active' : ''}>°F</span>
             </div>
+            {!initialLoading &&
+              (isAuthenticated ? (
+                <div className='nav-auth'>
+                  <span className='nav-auth-name'>{user?.name}</span>
+                  <button
+                    className='nav-auth-btn'
+                    onClick={() => {
+                      logout()
+                    }}
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <Link to='/auth' className='nav-auth-btn'>
+                  Sign in
+                </Link>
+              ))}
           </div>
         </header>
 
         <Hero weather={weather} isLoading={loading} isF={isF} />
 
         <div className='content-below'>
-          <div className='prompt-bar glass'>
-            <form id='chat-form'>
-              <input
-                ref={chatInputRef}
-                type='text'
-                id='chat-input'
-                placeholder='ask WeatherGPT anything…'
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                autoComplete='off'
-              />
-              <button type='button' id='mic-btn' className='mic-btn'>🎤</button>
-              <button type='submit' id='send-btn' className={loading ? 'loading' : ''}>
-                <span className='btn-text'>Get forecast</span>
-                <span className='loader' />
+          {isAuthenticated ? (
+            <div className='prompt-bar glass'>
+              <form id='chat-form'>
+                <input
+                  ref={chatInputRef}
+                  type='text'
+                  id='chat-input'
+                  placeholder='ask WeatherGPT anything…'
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  autoComplete='off'
+                />
+                <button type='button' id='mic-btn' className='mic-btn'>🎤</button>
+                <button type='submit' id='send-btn' className={loading ? 'loading' : ''}>
+                  <span className='btn-text'>Get forecast</span>
+                  <span className='loader' />
+                </button>
+              </form>
+              {showOnboarding && <div className='onboarding-hint'>Try asking "will it rain today?"</div>}
+            </div>
+          ) : (
+            <div className='prompt-bar glass auth-prompt'>
+              <span className='auth-prompt-text'>🔒 Sign in to ask WeatherGPT anything</span>
+              <button type='button' className='auth-submit' onClick={() => navigate('/auth')}>
+                <span className='btn-text'>Sign in</span>
               </button>
-            </form>
-            {showOnboarding && <div className='onboarding-hint'>Try asking "will it rain today?"</div>}
-          </div>
+            </div>
+          )}
 
-          <div className='chips-container'>
-            {SUGGESTIONS.map((s, i) => (
-              <button type='button' className='chip' key={i} onClick={() => handleSuggestion(s)}>
-                {s}
-              </button>
-            ))}
-          </div>
+          {isAuthenticated && (
+            <div className='chips-container'>
+              {SUGGESTIONS.map((s, i) => (
+                <button type='button' className='chip' key={i} onClick={() => handleSuggestion(s)}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className='data-streams'>
             {error ? (
@@ -179,14 +212,20 @@ export default function App() {
             )}
           </div>
 
-          <Chat
-            lang={lang}
-            input={input}
-            setInput={setInput}
-            onLocationChange={handleLocationChange}
-          />
+          {isAuthenticated && (
+            <Chat
+              lang={lang}
+              input={input}
+              setInput={setInput}
+              onLocationChange={handleLocationChange}
+            />
+          )}
         </div>
       </div>
+
+      {(alertsOpen || chartOpen) && (
+        <div className={`drawer-backdrop${alertsOpen || chartOpen ? ' open' : ''}`} onClick={() => { setAlertsOpen(false); setChartOpen(false) }} />
+      )}
 
       <AlertsDrawer
         open={alertsOpen}

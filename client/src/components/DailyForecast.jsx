@@ -1,6 +1,17 @@
+import { useState, useEffect } from 'react'
 import { getWeatherIcon } from '../lib/weather'
 
 export default function DailyForecast({ daily, isF }) {
+  const [animate, setAnimate] = useState(false)
+
+  useEffect(() => {
+    if (daily && daily.time && daily.time.length > 0) {
+      setAnimate(false)
+      const t = requestAnimationFrame(() => setAnimate(true))
+      return () => cancelAnimationFrame(t)
+    }
+  }, [daily])
+
   if (!daily || !daily.time || daily.time.length === 0) return null
 
   const allMins = daily.temperature_2m_min
@@ -23,7 +34,7 @@ export default function DailyForecast({ daily, isF }) {
   return (
     <>
       <div className='timeline-title'>7-day outlook</div>
-      <div className='daily-scroll' tabIndex='0'>
+      <div className={`daily-scroll${animate ? ' animate' : ''}`} tabIndex='0'>
         {days.map((d, i) => (
           <div className='day-strip' key={i}>
             <div className='day-name'>{d.day}</div>

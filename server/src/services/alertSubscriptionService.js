@@ -1,5 +1,6 @@
 // In-memory alert subscription store
 // For hackathon: persists in process memory; replace with DB in production
+const { checkAlertsForLocation } = require('./alertService');
 const subscriptions = [];
 let idCounter = 1;
 
