@@ -12,7 +12,8 @@
     "dev:client": "npm --prefix client run dev",
     "client:build": "npm --prefix client run build",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:client\"",
-    "test": "node --test server/tests"
+    "test": "node --test server/tests",
+    "build": "npm run client:build"
   },
   "keywords": [],
   "type": "commonjs",
