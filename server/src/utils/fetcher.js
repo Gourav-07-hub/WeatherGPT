@@ -33,22 +33,40 @@ class RateLimitError extends Error {
   }
 }
 
+const inflight = new Map();
+
 async function fetchWithRetry(url, options, limiter, maxRetries = 3) {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    if (limiter && !limiter.acquire()) {
-      throw new RateLimitError('Upstream rate limit reached (internal)');
+  // Deduplicate concurrent requests for the same URL
+  if (inflight.has(url)) {
+    return inflight.get(url);
+  }
+
+  const promise = (async () => {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      if (limiter && !limiter.acquire()) {
+        throw new RateLimitError('Upstream rate limit reached (internal)');
+      }
+      const res = await fetch(url, options);
+      if (res.ok) return res;
+      if (res.status === 429 || res.status === 503) {
+        if (attempt === maxRetries) throw new RateLimitError(`Upstream error ${res.status}`);
+        const retryAfter = res.headers.get('retry-after');
+        const base = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.pow(2, attempt + 1) * 1000;
+        const jitter = Math.floor(Math.random() * 1000);
+        const waitMs = base + jitter;
+        logger.warn(`Rate limited or unavailable (${res.status}), retrying in ${waitMs}ms`);
+        await new Promise(r => setTimeout(r, waitMs));
+        continue;
+      }
+      throw new Error(`Upstream error: ${res.status}`);
     }
-    const res = await fetch(url, options);
-    if (res.ok) return res;
-    if (res.status === 429 || res.status === 503) {
-      if (attempt === maxRetries) throw new RateLimitError(`Upstream error ${res.status}`);
-      const retryAfter = res.headers.get('retry-after');
-      const waitMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : Math.pow(2, attempt) * 1000;
-      logger.warn(`Rate limited or unavailable (${res.status}), retrying in ${waitMs}ms`);
-      await new Promise(r => setTimeout(r, waitMs));
-      continue;
-    }
-    throw new Error(`Upstream error: ${res.status}`);
+  })();
+
+  inflight.set(url, promise);
+  try {
+    return await promise;
+  } finally {
+    inflight.delete(url);
   }
 }
 
