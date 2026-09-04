@@ -1,7 +1,8 @@
 const { fetchOpenMeteo } = require('../utils/fetcher');
 const cache = require('../utils/cache');
 const config = require('../config/env');
-const { getCurrentWeatherOWM } = require('./openWeatherMapService');
+const logger = require('../utils/logger');
+const { getCurrentWeatherOWM, getHourlyForecastOWM } = require('./openWeatherMapService');
 const { getCurrentWeatherWA, getDailyForecastWA } = require('./weatherApiService');
 
 /**
@@ -85,30 +86,53 @@ async function getDailyForecast(lat, lon, days = 7, debug=false) {
 
 /**
  * Fetch hourly forecast (next 24h) for detailed alerts
+ * Provider priority: Open-Meteo -> OpenWeatherMap
  */
 async function getHourlyForecast(lat, lon, debug=false) {
   const cacheKey = `hr|${lat}|${lon}`;
   const cached = cache.get(cacheKey, debug);
   if (cached) return cached;
-  const params = new URLSearchParams({
-    latitude: lat,
-    longitude: lon,
-    hourly: [
-      'temperature_2m',
-      'relative_humidity_2m',
-      'weather_code',
-      'wind_speed_10m',
-      'precipitation',
-    ].join(','),
-    timezone: 'auto',
-    forecast_days: 2,
-  });
 
-  const res = await fetchOpenMeteo(`${config.OPEN_METEO_BASE}/v1/forecast?${params}`);
-  if (!res.ok) throw new Error(`Open-Meteo error: ${res.status}`);
-  const data = await res.json();
-  cache.set(cacheKey, data.hourly, 15 * 60 * 1000);
-  return data.hourly;
+  // Try Open-Meteo first
+  try {
+    const params = new URLSearchParams({
+      latitude: lat,
+      longitude: lon,
+      hourly: [
+        'temperature_2m',
+        'relative_humidity_2m',
+        'weather_code',
+        'wind_speed_10m',
+        'precipitation',
+      ].join(','),
+      timezone: 'auto',
+      forecast_days: 2,
+    });
+
+    const res = await fetchOpenMeteo(`${config.OPEN_METEO_BASE}/v1/forecast?${params}`);
+    if (!res.ok) throw new Error(`Open-Meteo error: ${res.status}`);
+    const data = await res.json();
+    data.hourly.source = 'open-meteo';
+    cache.set(cacheKey, data.hourly, 15 * 60 * 1000);
+    logger.info('Hourly forecast served by open-meteo', { lat, lon });
+    return data.hourly;
+  } catch (err) {
+    logger.warn('Open-Meteo hourly failed, trying OpenWeatherMap fallback', { lat, lon, error: err.message });
+  }
+
+  // Fallback to OpenWeatherMap
+  try {
+    const owm = await getHourlyForecastOWM(lat, lon);
+    if (owm) {
+      cache.set(cacheKey, owm, 15 * 60 * 1000);
+      logger.info('Hourly forecast served by openweathermap', { lat, lon });
+      return owm;
+    }
+  } catch (err) {
+    logger.warn('OpenWeatherMap hourly also failed', { lat, lon, error: err.message });
+  }
+
+  throw new Error('All hourly forecast providers failed');
 }
 
 module.exports = {

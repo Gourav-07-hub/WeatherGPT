@@ -36,4 +36,24 @@ function mapOWMCode(owmId) {
   return 0;
 }
 
-module.exports = { getCurrentWeatherOWM };
+async function getHourlyForecastOWM(lat, lon) {
+  if (!OPENWEATHERMAP_API_KEY) return null;
+  const url = `${OPENWEATHERMAP_BASE}/data/2.5/forecast?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&appid=${encodeURIComponent(OPENWEATHERMAP_API_KEY)}&units=metric&cnt=8`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    if (res.status === 401) return null;
+    throw new Error(`OpenWeatherMap forecast error: ${res.status}`);
+  }
+  const data = await res.json();
+  return {
+    time: data.list.map(item => item.dt_txt),
+    temperature_2m: data.list.map(item => item.main?.temp),
+    relative_humidity_2m: data.list.map(item => item.main?.humidity),
+    weather_code: data.list.map(item => mapOWMCode(item.weather?.[0]?.id)),
+    wind_speed_10m: data.list.map(item => item.wind?.speed),
+    precipitation: data.list.map(item => item.rain?.['3h'] ?? item.snow?.['3h'] ?? 0),
+    source: 'openweathermap',
+  };
+}
+
+module.exports = { getCurrentWeatherOWM, getHourlyForecastOWM };
