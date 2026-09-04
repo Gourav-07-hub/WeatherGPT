@@ -45,13 +45,18 @@ async function getHourlyForecastOWM(lat, lon) {
     throw new Error(`OpenWeatherMap forecast error: ${res.status}`);
   }
   const data = await res.json();
+  if (!Array.isArray(data.list) || data.list.length === 0) return null;
   return {
-    time: data.list.map(item => item.dt_txt),
+    time: data.list.map(item => {
+      if (!item.dt_txt) return null;
+      // Normalize "2026-09-04 12:00:00" to "2026-09-04T12:00" (ISO-ish) to match Open-Meteo format
+      return item.dt_txt.replace(' ', 'T').slice(0, 16);
+    }),
     temperature_2m: data.list.map(item => item.main?.temp),
     relative_humidity_2m: data.list.map(item => item.main?.humidity),
     weather_code: data.list.map(item => mapOWMCode(item.weather?.[0]?.id)),
-    wind_speed_10m: data.list.map(item => item.wind?.speed),
-    precipitation: data.list.map(item => item.rain?.['3h'] ?? item.snow?.['3h'] ?? 0),
+    wind_speed_10m: data.list.map(item => (item.wind?.speed ?? 0) * 3.6),
+    precipitation: data.list.map(item => (item.rain?.['3h'] ?? item.snow?.['3h'] ?? 0) / 3),
     source: 'openweathermap',
   };
 }
