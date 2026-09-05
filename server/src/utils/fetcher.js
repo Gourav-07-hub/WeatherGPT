@@ -35,11 +35,18 @@ class RateLimitError extends Error {
 
 const inflight = new Map();
 
-async function fetchWithRetry(url, options, limiter, maxRetries = 3) {
-  // Deduplicate concurrent requests for the same URL
-  if (inflight.has(url)) {
-    return inflight.get(url);
-  }
+function dedupKey(url, options = {}) {
+  // POST requests carry a body that differs per caller; deduplicating by URL
+  // alone would return one caller's response to another. Only deduplicate
+  // requests that are safe to share (GET-style, no body).
+  if (options.method && options.method !== 'GET') return null;
+  if (options.body) return null;
+  return url;
+}
+
+async function fetchWithRetry(url, options = {}, limiter, maxRetries = 3) {
+  const key = dedupKey(url, options);
+  if (key && inflight.has(key)) return inflight.get(key);
 
   const promise = (async () => {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -62,12 +69,15 @@ async function fetchWithRetry(url, options, limiter, maxRetries = 3) {
     }
   })();
 
-  inflight.set(url, promise);
-  try {
-    return await promise;
-  } finally {
-    inflight.delete(url);
+  if (key) {
+    inflight.set(key, promise);
+    try {
+      return await promise;
+    } finally {
+      inflight.delete(key);
+    }
   }
+  return promise;
 }
 
 async function fetchOpenMeteo(url, options = {}) {

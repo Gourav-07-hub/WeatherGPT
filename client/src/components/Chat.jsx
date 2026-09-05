@@ -1,5 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { fetchChat } from '../lib/api'
+import { marked } from 'marked'
+
+const RISK_COLORS = {
+  Low: '#10b981',
+  Moderate: '#f59e0b',
+  High: '#f97316',
+  Extreme: '#ef4444',
+}
 
 export default function Chat({ lang, input, setInput, onLocationChange }) {
   const [messages, setMessages] = useState([])
@@ -32,6 +40,28 @@ export default function Chat({ lang, input, setInput, onLocationChange }) {
     async (text) => {
       try {
         const data = await fetchChat(text, langRef.current)
+
+        if (data.replyMode === 'vader') {
+          // Vader briefing: render full markdown report with risk badge
+          setMessages((m) => {
+            const copy = [...m]
+            copy[copy.length - 1] = {
+              role: 'bot',
+              text: data.reply || 'Here is your disaster intelligence briefing:',
+              vaderBriefing: data.briefing,
+              vaderSummary: data.summary,
+              vaderSections: data.sections,
+              riskLevel: data.riskLevel,
+              replyMode: 'vader',
+            }
+            return copy
+          })
+          speak(data.reply || '')
+          if (data.location) onLocationChange(data.location)
+          return
+        }
+
+        // Standard weather reply
         setMessages((m) => {
           const copy = [...m]
           copy[copy.length - 1] = {
@@ -120,6 +150,23 @@ export default function Chat({ lang, input, setInput, onLocationChange }) {
     doChat(text)
   }
 
+  const renderVaderBriefing = (msg) => {
+    const riskColor = RISK_COLORS[msg.riskLevel] || '#6b7280'
+    return (
+      <div className="vader-briefing">
+        {msg.text && <div className="vader-intro">{msg.text}</div>}
+        {msg.riskLevel && (
+          <div className="vader-risk-badge" style={{ borderColor: riskColor, color: riskColor }}>
+            Risk Level: {msg.riskLevel}
+          </div>
+        )}
+        {msg.vaderBriefing && (
+          <div className="vader-report-body" dangerouslySetInnerHTML={{ __html: marked(msg.vaderBriefing) }} />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className='chat-thread' id='chat-thread' aria-live='polite' ref={threadRef}>
       {messages.map((m, i) => {
@@ -134,8 +181,10 @@ export default function Chat({ lang, input, setInput, onLocationChange }) {
               <span className='typing-dots'>
                 <span /><span /><span />
               </span>
+            ) : m.replyMode === 'vader' ? (
+              renderVaderBriefing(m)
             ) : (
-              m.text
+              <>{m.text}</>
             )}
             {m.retryText && (
               <button

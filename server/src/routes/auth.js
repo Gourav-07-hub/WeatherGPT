@@ -18,7 +18,7 @@ async function guardDb(res) {
 router.post(
   '/register',
   asyncWrapper(async (req, res) => {
-    if (!guardDb(res)) return;
+    if (!(await guardDb(res))) return;
     const { name, email, password } = req.body || {};
 
     if (!name || typeof name !== 'string') {
@@ -39,9 +39,18 @@ router.post(
       return res.status(409).json({ error: 'An account with this email already exists' });
     }
 
-    const user = await createUser({ name: name.trim(), email: email.trim(), password });
-    const token = signToken(user);
-    res.status(201).json({ token, user });
+    try {
+      const user = await createUser({ name: name.trim(), email: email.trim(), password });
+      const token = signToken(user);
+      res.status(201).json({ token, user });
+    } catch (err) {
+      // Existing check + insert is not atomic; a concurrent register with the
+      // same email produces a Mongo duplicate-key error (E11000).
+      if (err && err.code === 11000) {
+        return res.status(409).json({ error: 'An account with this email already exists' });
+      }
+      throw err;
+    }
   })
 );
 
@@ -49,7 +58,7 @@ router.post(
 router.post(
   '/login',
   asyncWrapper(async (req, res) => {
-    if (!guardDb(res)) return;
+    if (!(await guardDb(res))) return;
     const { email, password } = req.body || {};
 
     if (!email || typeof email !== 'string') {

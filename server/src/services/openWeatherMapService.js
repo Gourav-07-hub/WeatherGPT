@@ -17,7 +17,7 @@ async function getCurrentWeatherOWM(lat, lon) {
     apparent_temperature: data.main?.feels_like,
     relative_humidity_2m: data.main?.humidity,
     weather_code: mapOWMCode(data.weather?.[0]?.id),
-    wind_speed_10m: data.wind?.speed,
+    wind_speed_10m: (data.wind?.speed ?? 0) * 3.6,
     wind_direction_10m: data.wind?.deg,
     source: 'openweathermap',
   };

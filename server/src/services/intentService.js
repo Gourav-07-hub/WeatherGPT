@@ -30,30 +30,46 @@ function detectIntent(text) {
   return 'current';
 }
 
+function stripTimeWords(s) {
+  return s.replace(
+    /\b(tomorrow|today|now|tonight|next\s+\w+|this\s+\w+|week|weekend|month|year|afternoon|morning|evening|night)\b.*$/i,
+    ''
+  ).trim();
+}
+
 function extractLocation(text) {
   const t = text.toLowerCase().replace(/[?.,]/g, '').trim();
 
-  // strip leading weather-intent phrases
-  let s = t.replace(
-    /^(what('s| is) the )?(weather|temperature|forecast|climate|rain|alerts?|warning|trend)s?\s*(in|at|for)?\s*/i,
-    ''
-  );
-
-  // strip trailing time words
-  s = s.replace(
-    /\b(tomorrow|today|now|next\s+\w+|this\s+\w+|week|month|year|afternoon|morning|evening|night)\b.*$/i,
-    ''
-  ).trim();
-
-  const parts = s.split(/\s+/);
-  const preps = ['in', 'at', 'for', 'of', 'on'];
-  for (let i = parts.length - 1; i >= 0; i--) {
-    if (preps.includes(parts[i]) && i < parts.length - 1) {
-      return parts.slice(i + 1).join(' ');
+  // 1) Direct preposition match: "<phrase> in/at/for <location>"
+  const prepMatch = t.match(/\b(?:in|at|for)\s+([a-z][a-z0-9 ]{0,40})$/i);
+  if (prepMatch) {
+    const loc = stripTimeWords(prepMatch[1]).trim();
+    if (loc && !/^(the|my|this|next)\b/i.test(loc)) {
+      return loc;
     }
   }
 
-  return s || parts.join(' ');
+  // 2) Strip leading weather-intent phrasing
+  let s = t.replace(
+    /^(what('s| is| are)? the )?(weather|temperature|forecast|climate|condition|rain|raining|alerts?|warning|warnings|show me|report|trend)s?\s*(in|at|for)?\s*/i,
+    ''
+  );
+
+  // 3) Strip trailing time/filler words
+  s = stripTimeWords(s);
+
+  // 4) Remove remaining generic question wrappers -> no location
+  if (/^(any|will|would|is|are|does|do|can|should|how|what|tell|give)\b.*$/i.test(s)) {
+    return '';
+  }
+
+  // 5) Pure weather keywords left (no real location) -> default location
+  const fillerWords = /^(weather|forecast|climate|trend|trends|alerts?|warning|warnings|rain|raining|temperature|report|condition)s?$/i;
+  if (s && s.split(/\s+/).every((w) => fillerWords.test(w))) {
+    return '';
+  }
+
+  return s || '';
 }
 
 module.exports = { detectIntent, extractLocation };

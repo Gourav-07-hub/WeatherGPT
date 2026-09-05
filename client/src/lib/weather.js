@@ -1,6 +1,7 @@
 export function mapWeatherCodeToState(code) {
   if (code <= 1) return 'clear-day'
   if (code <= 3) return 'cloudy'
+  if (code === 45 || code === 48) return 'cloudy'
   if (code <= 67) return 'rain'
   if (code <= 77) return 'snow'
   if (code >= 95) return 'storm'

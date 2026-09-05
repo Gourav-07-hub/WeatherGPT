@@ -18,7 +18,7 @@ async function getCurrentWeatherWA(lat, lon) {
     apparent_temperature: c.feelslike_c,
     relative_humidity_2m: c.humidity,
     weather_code: mapConditionToCode(c.condition?.text),
-    wind_speed_10m: c.wind_kph ? c.wind_kph / 3.6 : undefined,
+    wind_speed_10m: c.wind_kph ? c.wind_kph : undefined,
     wind_direction_10m: c.wind_degree,
     source: 'weatherapi',
   };
@@ -40,7 +40,7 @@ async function getDailyForecastWA(lat, lon, days = 7) {
     temperature_2m_max: daysArr.map(d => d.day?.maxtemp_c),
     temperature_2m_min: daysArr.map(d => d.day?.mintemp_c),
     precipitation_sum: daysArr.map(d => d.day?.totalprecip_mm),
-    wind_speed_10m_max: daysArr.map(d => d.day?.maxwind_kph ? d.day.maxwind_kph / 3.6 : undefined),
+    wind_speed_10m_max: daysArr.map(d => d.day?.maxwind_kph ? d.day.maxwind_kph : undefined),
   };
 }
 

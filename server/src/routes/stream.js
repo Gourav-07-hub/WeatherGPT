@@ -16,7 +16,8 @@ router.get('/', asyncWrapper(async (req, res) => {
   const interval = setInterval(() => {
     const matched = [];
     for (const sub of subscriptions) {
-      if (cityFilter && !sub.name.toLowerCase().includes(cityFilter)) continue;
+      const subName = String(sub.name ?? '');
+      if (cityFilter && !subName.toLowerCase().includes(cityFilter)) continue;
       if (sub.lastAlerts && sub.lastAlerts.length > 0) {
         matched.push({ location: sub.name, alerts: sub.lastAlerts });
       }
@@ -28,6 +29,7 @@ router.get('/', asyncWrapper(async (req, res) => {
     }
   }, 10000);
 
+  res.on('error', () => clearInterval(interval));
   req.on('close', () => clearInterval(interval));
 }));
 

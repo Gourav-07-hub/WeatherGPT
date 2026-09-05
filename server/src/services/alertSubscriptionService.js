@@ -23,9 +23,10 @@ async function checkAllSubscriptions() {
 }
 
 function addSubscription({ name, lat, lon }) {
+  const safeName = String(name || '').trim().slice(0, 100) || `${lat},${lon}`;
   const sub = {
     id: idCounter++,
-    name: name || `${lat},${lon}`,
+    name: safeName,
     lat: Number(lat),
     lon: Number(lon),
     createdAt: new Date().toISOString(),

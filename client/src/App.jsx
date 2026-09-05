@@ -32,7 +32,6 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false)
 
   const chatInputRef = useRef(null)
-  const loadedRef = useRef(false)
 
   useEffect(() => {
     if (pendingSuggestion && chatInputRef.current) {
@@ -53,25 +52,30 @@ export default function App() {
       setDaily(data.daily || null)
       setCurrentLat(data.lat != null ? data.lat : currentLat)
       setCurrentLon(data.lon != null ? data.lon : currentLon)
-      if (data.name) setCurrentName(data.name)
+      if (data.name && data.name !== 'Unknown' && data.name !== 'Unknown city') {
+        setCurrentName(data.name)
+      }
+      return true
     } catch (err) {
       setError(true)
+      return false
     } finally {
       setLoading(false)
     }
   }, [currentLat, currentLon])
 
   useEffect(() => {
-    if (loadedRef.current) return
-    loadedRef.current = true
-
     const attempt = async () => {
+      const loadWithRetry = async (query, isCoords = false) => {
+        const ok = await loadWeather(query, isCoords)
+        if (!ok) throw new Error('weather load failed')
+      }
       if (navigator.geolocation) {
         await new Promise((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(
             async (pos) => {
               try {
-                await loadWeather(`lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`, true)
+                await loadWithRetry(`lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`, true)
                 resolve()
               } catch (err) {
                 reject(err)
@@ -79,7 +83,7 @@ export default function App() {
             },
             async () => {
               try {
-                await loadWeather('Bhopal')
+                await loadWithRetry('Bhopal')
                 resolve()
               } catch (err) {
                 reject(err)
@@ -88,13 +92,13 @@ export default function App() {
           )
         })
       } else {
-        await loadWeather('Bhopal')
+        await loadWithRetry('Bhopal')
       }
     }
 
     const run = async () => {
       let attemptCount = 0
-      const maxAttempts = 2
+      const maxAttempts = 3
       while (attemptCount < maxAttempts) {
         try {
           await attempt()

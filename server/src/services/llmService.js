@@ -66,7 +66,8 @@ const langNameMap = {
 };
 
 function targetLanguageFromCode(code) {
-  const match = String(code || '').match(/[a-z]{2}(?=[-])/i);
+  // Accept plain codes ('hi', 'en') as well as region-suffixed ('hi-IN')
+  const match = String(code || '').match(/^[a-z]{2}\b/i);
   if (!match) return 'en';
   const l = match[0].toLowerCase();
   return langNameMap[l] ? l : 'en';

@@ -22,7 +22,8 @@ export default function DailyForecast({ daily, isF }) {
 
   const days = []
   for (let i = 0; i < daily.time.length; i++) {
-    const date = new Date(daily.time[i])
+    const [y, m, d] = daily.time[i].split('-').map(Number)
+    const date = new Date(y, (m || 1) - 1, d || 1)
     const dayName = date.toLocaleDateString('en-US', { weekday: 'short' })
     const lo = daily.temperature_2m_min[i]
     const hi = daily.temperature_2m_max[i]
