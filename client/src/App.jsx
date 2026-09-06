@@ -33,6 +33,7 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false)
 
   const chatInputRef = useRef(null)
+  const hasInitializedRef = useRef(false)
 
   useEffect(() => {
     if (pendingSuggestion && chatInputRef.current) {
@@ -51,8 +52,8 @@ export default function App() {
       setWeather(data.current ? { current: data.current } : data)
       setHourly(data.hourly || null)
       setDaily(data.daily || null)
-      setCurrentLat(data.lat != null ? data.lat : currentLat)
-      setCurrentLon(data.lon != null ? data.lon : currentLon)
+      if (data.lat != null) setCurrentLat(data.lat)
+      if (data.lon != null) setCurrentLon(data.lon)
       if (data.name && data.name !== 'Unknown' && data.name !== 'Unknown city') {
         setCurrentName(data.name)
         setLocationDenied(false)
@@ -64,55 +65,28 @@ export default function App() {
     } finally {
       setLoading(false)
     }
-  }, [currentLat, currentLon])
+  }, [])
 
   useEffect(() => {
-    const attempt = async () => {
-      const loadWithRetry = async (query, isCoords = false) => {
-        const ok = await loadWeather(query, isCoords)
-        if (!ok) throw new Error('weather load failed')
+    if (hasInitializedRef.current) return
+    hasInitializedRef.current = true
+
+    const t = setTimeout(async () => {
+      if (!navigator.geolocation) {
+        setLocationDenied(true)
+        setLoading(false)
+        return
       }
-      if (navigator.geolocation) {
-        await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-              try {
-                await loadWithRetry(`lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`, true)
-                resolve()
-              } catch (err) {
-                reject(err)
-              }
-            },
-            () => {
-              setLocationDenied(true)
-              setLoading(false)
-              resolve()
-            }
-          )
-        })
-      } else {
+      try {
+        const pos = await new Promise((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject)
+        )
+        await loadWeather(`lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`, true)
+      } catch {
         setLocationDenied(true)
         setLoading(false)
       }
-    }
-
-    const run = async () => {
-      let attemptCount = 0
-      const maxAttempts = 3
-      while (attemptCount < maxAttempts) {
-        try {
-          await attempt()
-          return
-        } catch {
-          attemptCount++
-          if (attemptCount < maxAttempts) {
-            await new Promise(r => setTimeout(r, 1500))
-          }
-        }
-      }
-    }
-
-    const t = setTimeout(run, 300)
+    }, 300)
     return () => clearTimeout(t)
   }, [loadWeather])
 

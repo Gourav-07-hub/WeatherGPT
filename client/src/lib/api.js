@@ -1,12 +1,23 @@
 const API = import.meta.env.VITE_API_URL || ''
 
+const inflight = new Map()
+
 export async function fetchWeather(query, isCoords = false) {
   const url = isCoords
     ? `${API}/api/weather?${query}&daily=1&hourly=1`
     : `${API}/api/weather?q=${encodeURIComponent(query)}&daily=1&hourly=1`
-  const res = await fetch(url)
-  if (!res.ok) throw new Error('API error')
-  return res.json()
+  if (inflight.has(url)) return inflight.get(url)
+  const promise = (async () => {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error('API error')
+    return res.json()
+  })()
+  inflight.set(url, promise)
+  try {
+    return await promise
+  } finally {
+    inflight.delete(url)
+  }
 }
 
 export async function fetchChat(message, lang, location, mode) {
