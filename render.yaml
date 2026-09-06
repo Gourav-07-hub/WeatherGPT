@@ -19,3 +19,11 @@ services:
         generateValue: true
       - key: OPENAI_API_KEY
         sync: false
+      - key: WEATHERAPI_API_KEY
+        sync: false
+      - key: OPENWEATHERMAP_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: JWT_EXPIRES_IN
+        value: 7d

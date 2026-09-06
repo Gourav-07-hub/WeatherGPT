@@ -11,7 +11,9 @@ const { getCurrentWeatherWA, getDailyForecastWA } = require('./weatherApiService
  * (Open-Meteo is free, no key, 28 metrics — matches Vader's correct data)
  */
 async function getCurrentWeather(lat, lon, debug=false, preferOpenMeteo=false) {
-  const cacheKey = (preferOpenMeteo ? 'cur|om|' : 'cur|') + `${lat}|${lon}`;
+  const rLat = Number(lat).toFixed(3);
+  const rLon = Number(lon).toFixed(3);
+  const cacheKey = (preferOpenMeteo ? 'cur|om|' : 'cur|') + `${rLat}|${rLon}`;
   const cached = cache.get(cacheKey, debug);
   if (cached) return cached;
 
@@ -85,7 +87,9 @@ async function getCurrentWeather(lat, lon, debug=false, preferOpenMeteo=false) {
  * (matches Vader's DAILY_VARS, Asia/Kolkata — correct data)
  */
 async function getDailyForecast(lat, lon, days = 7, debug=false, preferOpenMeteo=false) {
-  const cacheKey = (preferOpenMeteo ? 'day|om|' : 'day|') + `${lat}|${lon}|${days}`;
+  const rLat = Number(lat).toFixed(3);
+  const rLon = Number(lon).toFixed(3);
+  const cacheKey = (preferOpenMeteo ? 'day|om|' : 'day|') + `${rLat}|${rLon}|${days}`;
   const cached = cache.get(cacheKey, debug);
   if (cached) return cached;
 
@@ -131,7 +135,9 @@ async function getDailyForecast(lat, lon, days = 7, debug=false, preferOpenMeteo
  * Provider priority: Open-Meteo -> OpenWeatherMap
  */
 async function getHourlyForecast(lat, lon, debug=false) {
-  const cacheKey = `hr|${lat}|${lon}`;
+  const rLat = Number(lat).toFixed(3);
+  const rLon = Number(lon).toFixed(3);
+  const cacheKey = `hr|${rLat}|${rLon}`;
   const cached = cache.get(cacheKey, debug);
   if (cached) return cached;
 

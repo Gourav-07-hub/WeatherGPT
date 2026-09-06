@@ -1,12 +1,20 @@
-const fetch = require('node-fetch');
+const { fetchWithRetry } = require('../utils/fetcher');
+const logger = require('../utils/logger');
 
 const WEATHERAPI_BASE = process.env.WEATHERAPI_BASE || 'https://api.weatherapi.com/v1';
 const WEATHERAPI_KEY = process.env.WEATHERAPI_API_KEY || '';
+const waLimiter = { acquire: () => true };
 
 async function getCurrentWeatherWA(lat, lon) {
   if (!WEATHERAPI_KEY) return null;
   const url = `${WEATHERAPI_BASE}/current.json?key=${encodeURIComponent(WEATHERAPI_KEY)}&q=${encodeURIComponent(lat)},${encodeURIComponent(lon)}`;
-  const res = await fetch(url);
+  let res;
+  try {
+    res = await fetchWithRetry(url, {}, waLimiter);
+  } catch (err) {
+    if (err.status === 429) logger.warn('WeatherAPI rate-limited', { lat, lon });
+    throw err;
+  }
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) return null;
     throw new Error(`WeatherAPI error: ${res.status}`);
@@ -27,7 +35,13 @@ async function getCurrentWeatherWA(lat, lon) {
 async function getDailyForecastWA(lat, lon, days = 7) {
   if (!WEATHERAPI_KEY) return null;
   const url = `${WEATHERAPI_BASE}/forecast.json?key=${encodeURIComponent(WEATHERAPI_KEY)}&q=${encodeURIComponent(lat)},${encodeURIComponent(lon)}&days=${encodeURIComponent(String(days))}`;
-  const res = await fetch(url);
+  let res;
+  try {
+    res = await fetchWithRetry(url, {}, waLimiter);
+  } catch (err) {
+    if (err.status === 429) logger.warn('WeatherAPI forecast rate-limited', { lat, lon });
+    throw err;
+  }
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) return null;
     throw new Error(`WeatherAPI error: ${res.status}`);

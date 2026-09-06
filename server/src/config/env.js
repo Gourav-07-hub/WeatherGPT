@@ -10,7 +10,7 @@ const rootDir = path.resolve(__dirname, '../../../');
 
 const config = {
   PORT: parseInt(process.env.PORT || '3000', 10),
-  CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
+  CORS_ORIGIN: process.env.CORS_ORIGIN || (process.env.NODE_ENV === 'production' ? '' : '*'),
   OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
   OPENAI_BASE: process.env.OPENAI_BASE || 'https://api.openai.com',
   OPENAI_MODEL: process.env.OPENAI_MODEL || 'gpt-4o-mini',
@@ -22,4 +22,10 @@ const config = {
 };
 
 if (Number.isNaN(config.PORT)) throw new Error('PORT must be a number');
+if (process.env.NODE_ENV === 'production' && !process.env.CORS_ORIGIN) {
+  console.warn('CORS_ORIGIN not set in production — API will reject browser requests. Set it to your Vercel URL in Render dashboard.');
+}
+if (process.env.NODE_ENV === 'production' && config.JWT_SECRET === 'dev-secret-change-me') {
+  throw new Error('JWT_SECRET must be set in production — refusing to start with insecure default');
+}
 module.exports = config;

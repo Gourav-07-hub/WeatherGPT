@@ -1,12 +1,20 @@
-const fetch = require('node-fetch');
+const { fetchWithRetry } = require('../utils/fetcher');
+const logger = require('../utils/logger');
 
 const OPENWEATHERMAP_BASE = process.env.OPENWEATHERMAP_BASE || 'https://api.openweathermap.org';
 const OPENWEATHERMAP_API_KEY = process.env.OPENWEATHERMAP_API_KEY || '';
+const owmLimiter = { acquire: () => true };
 
 async function getCurrentWeatherOWM(lat, lon) {
   if (!OPENWEATHERMAP_API_KEY) return null;
   const url = `${OPENWEATHERMAP_BASE}/data/2.5/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&appid=${encodeURIComponent(OPENWEATHERMAP_API_KEY)}&units=metric`;
-  const res = await fetch(url);
+  let res;
+  try {
+    res = await fetchWithRetry(url, {}, owmLimiter);
+  } catch (err) {
+    if (err.status === 429) logger.warn('OWM rate-limited', { lat, lon });
+    throw err;
+  }
   if (!res.ok) {
     if (res.status === 401) return null; // invalid key, fallback silently
     throw new Error(`OpenWeatherMap error: ${res.status}`);
@@ -39,7 +47,13 @@ function mapOWMCode(owmId) {
 async function getHourlyForecastOWM(lat, lon) {
   if (!OPENWEATHERMAP_API_KEY) return null;
   const url = `${OPENWEATHERMAP_BASE}/data/2.5/forecast?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&appid=${encodeURIComponent(OPENWEATHERMAP_API_KEY)}&units=metric&cnt=8`;
-  const res = await fetch(url);
+  let res;
+  try {
+    res = await fetchWithRetry(url, {}, owmLimiter);
+  } catch (err) {
+    if (err.status === 429) logger.warn('OWM forecast rate-limited', { lat, lon });
+    throw err;
+  }
   if (!res.ok) {
     if (res.status === 401) return null;
     throw new Error(`OpenWeatherMap forecast error: ${res.status}`);

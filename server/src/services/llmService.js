@@ -35,22 +35,30 @@ async function generateReply({ userMessage, intent, locationName, weather, targe
     ? 'You are WeatherGPT, a concise weather assistant for India. Reply in 1-2 sentences max. Include the key numbers and any warnings.'
     : `You are WeatherGPT, a concise weather assistant for India. Reply in ${targetLanguage} in 1-2 sentences max. Use simple local terms. Include the key numbers and any warnings.`;
 
-  const res = await fetchWithRetry(`${config.OPENAI_BASE}/v1/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: config.OPENAI_MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `User asked: "${userMessage}"\n\nWeather data:\n${context}\n\nReply to the user's question using this data.` },
-      ],
-      max_tokens: 200,
-      temperature: 0.3,
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  let res;
+  try {
+    res = await fetchWithRetry(`${config.OPENAI_BASE}/v1/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: config.OPENAI_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `User asked: "${userMessage}"\n\nWeather data:\n${context}\n\nReply to the user's question using this data.` },
+        ],
+        max_tokens: 200,
+        temperature: 0.3,
+      }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     const txt = await res.text();

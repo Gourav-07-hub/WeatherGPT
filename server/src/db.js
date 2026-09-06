@@ -12,18 +12,27 @@ async function connectDB() {
   }
   if (connectPromise) return connectPromise;
   connectPromise = (async () => {
-    try {
-      await mongoose.connect(config.MONGODB_URI, {
-        dbName: 'weathergpt',
-        serverSelectionTimeoutMS: 10000,
-      });
-      connected = true;
-      logger.info('MongoDB connected.');
-      return true;
-    } catch (err) {
-      logger.error('MongoDB connection failed', { message: err.message });
-      connected = false;
-      return false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await mongoose.connect(config.MONGODB_URI, {
+          dbName: 'weathergpt',
+          serverSelectionTimeoutMS: 10000,
+        });
+        connected = true;
+        logger.info('MongoDB connected.', { attempt: attempt + 1 });
+        return true;
+      } catch (err) {
+        logger.error('MongoDB connection failed', { message: err.message, attempt: attempt + 1 });
+        if (attempt < 2) {
+          const wait = Math.pow(2, attempt) * 1000;
+          logger.warn(`Retrying MongoDB in ${wait}ms`);
+          await new Promise((r) => setTimeout(r, wait));
+          continue;
+        }
+        connected = false;
+        connectPromise = null;
+        return false;
+      }
     }
   })();
   return connectPromise;

@@ -68,7 +68,8 @@ export default function App() {
       }
       return true
     } catch (err) {
-      setError(true)
+      const isRateLimit = err.message && err.message.toLowerCase().includes('429');
+      setError(isRateLimit ? 'rate-limit' : true)
       return false
     } finally {
       setLoading(false)
@@ -193,7 +194,7 @@ export default function App() {
                     autoComplete='off'
                   />
                   <button type='button' id='mic-btn' className='mic-btn'>🎤</button>
-                  <button type='submit' id='send-btn' className={loading ? 'loading' : ''}>
+                  <button type='submit' id='send-btn' className={loading ? 'loading' : ''} disabled={loading}>
                     <span className='btn-text'>Get forecast</span>
                     <span className='loader' />
                   </button>
@@ -223,7 +224,7 @@ export default function App() {
           <div className='data-streams'>
             {error ? (
               <div>
-                Error connecting.{' '}
+                {error === 'rate-limit' ? 'Rate limit hit — please wait a second and try again.' : 'Network error — check your connection.'}{' '}
                 <button className='chip' onClick={() => loadWeather(currentName)}>
                   Retry
                 </button>

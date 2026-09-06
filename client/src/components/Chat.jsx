@@ -74,12 +74,13 @@ export default function Chat({ lang, input, setInput, onLocationChange, currentL
         })
         speak(data.reply || '')
         if (data.location) onLocationChange(data.location)
-      } catch {
+      } catch (err) {
+        const is429 = err.message && err.message.includes('429');
         setMessages((m) => {
           const copy = [...m]
           copy[copy.length - 1] = {
             role: 'bot',
-            text: "Can't reach the sky right now.",
+            text: is429 ? 'Rate limit hit — please wait a second and try again.' : "Can't reach the sky right now. Check your connection.",
             retryText: text,
           }
           return copy
