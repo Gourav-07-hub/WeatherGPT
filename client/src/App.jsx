@@ -34,6 +34,8 @@ export default function App() {
 
   const chatInputRef = useRef(null)
   const hasInitializedRef = useRef(false)
+  const currentNameRef = useRef('')
+  const lastCoordsRef = useRef('')
 
   useEffect(() => {
     if (pendingSuggestion && chatInputRef.current) {
@@ -43,6 +45,9 @@ export default function App() {
       setPendingSuggestion(null)
     }
   }, [pendingSuggestion])
+
+  // Keep ref in sync for dedupe checks without adding deps
+  useEffect(() => { currentNameRef.current = currentName }, [currentName])
 
   const loadWeather = useCallback(async (query, isCoords = false) => {
     setLoading(true)
@@ -54,6 +59,9 @@ export default function App() {
       setDaily(data.daily || null)
       if (data.lat != null) setCurrentLat(data.lat)
       if (data.lon != null) setCurrentLon(data.lon)
+      if (data.lat != null && data.lon != null) {
+        lastCoordsRef.current = `${Number(data.lat).toFixed(3)},${Number(data.lon).toFixed(3)}`
+      }
       if (data.name && data.name !== 'Unknown' && data.name !== 'Unknown city') {
         setCurrentName(data.name)
         setLocationDenied(false)
@@ -112,6 +120,7 @@ export default function App() {
 
   const handleLocationChange = useCallback(
     (name) => {
+      if (!name || name.trim().toLowerCase() === currentNameRef.current.trim().toLowerCase()) return
       loadWeather(name)
     },
     [loadWeather]

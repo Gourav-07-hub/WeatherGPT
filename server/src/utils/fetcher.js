@@ -23,7 +23,6 @@ class RateLimiter {
 }
 
 const meteoLimiter = new RateLimiter(10, 1000);
-const nomLimiter = new RateLimiter(1, 1000);
 
 class RateLimitError extends Error {
   constructor(message) {
@@ -32,6 +31,10 @@ class RateLimitError extends Error {
     this.status = 429;
   }
 }
+
+// Nominatim: 1 req/sec globally, no bursting — queue with 1000ms gap
+let nominatimQueue = Promise.resolve();
+let lastNominatimAt = 0;
 
 const inflight = new Map();
 
@@ -85,8 +88,21 @@ async function fetchOpenMeteo(url, options = {}) {
 }
 
 async function fetchNominatim(url, options = {}) {
-  options.headers = { ...options.headers, 'User-Agent': 'WeatherGPT/1.0 (contact@weathergpt.local)' };
-  return fetchWithRetry(url, options, nomLimiter);
+  const headers = { ...options.headers, 'User-Agent': 'WeatherGPT/1.0 (contact@weathergpt.local)' };
+  const opts = { ...options, headers };
+
+  const task = nominatimQueue.then(async () => {
+    const now = Date.now();
+    const wait = Math.max(0, 1000 - (now - lastNominatimAt));
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastNominatimAt = Date.now();
+    return fetchWithRetry(url, opts, null);
+  });
+
+  // Keep queue moving even if task fails
+  nominatimQueue = task.catch(() => {});
+
+  return task;
 }
 
 module.exports = { fetchOpenMeteo, fetchNominatim, fetchWithRetry };
