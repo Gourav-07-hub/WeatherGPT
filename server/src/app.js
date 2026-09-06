@@ -16,7 +16,7 @@ const authRouter = require('./routes/auth');
 
 const app = express();
 
-app.use(cors({ origin: config.CORS_ORIGIN }));
+app.use(cors({ origin: config.CORS_ORIGIN || (process.env.NODE_ENV === 'production' ? false : '*') }));
 app.use(express.json());
 app.use(requestLogger);
 
