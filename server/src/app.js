@@ -48,4 +48,55 @@ if (fs.existsSync(path.join(clientDist, 'index.html'))) {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
+async function startServer() {
+  process.on('uncaughtException', (err) => {
+    console.error('[CRITICAL STARTUP ERROR] Uncaught exception:', err);
+    process.exit(1);
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    console.error('[CRITICAL STARTUP ERROR] Unhandled promise rejection:', reason);
+    process.exit(1);
+  });
+
+  const { connectDB } = require('./db');
+  const PORT = parseInt(process.env.PORT || config.PORT || '3000', 10);
+  const HOST = '0.0.0.0';
+
+  console.log(`[STARTUP] Initializing WeatherGPT on Node ${process.version} (NODE_ENV: ${process.env.NODE_ENV || 'development'})...`);
+
+  try {
+    console.log('[STARTUP] Connecting to database...');
+    await connectDB();
+  } catch (dbErr) {
+    console.error('[STARTUP WARNING] MongoDB connection failed (server will continue running):', dbErr.message);
+  }
+
+  try {
+    const server = app.listen(PORT, HOST, () => {
+      console.log(`[STARTUP SUCCESS] WeatherGPT is running on http://${HOST}:${PORT}`);
+    });
+
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`\n[STARTUP ERROR] Port ${PORT} is already in use.`);
+        console.error(`Another process may be running on port ${PORT}.`);
+      } else {
+        console.error('[STARTUP ERROR] Server error:', err);
+      }
+      process.exit(1);
+    });
+
+    return server;
+  } catch (listenErr) {
+    console.error('[STARTUP ERROR] Failed to bind to port:', listenErr);
+    process.exit(1);
+  }
+}
+
+if (require.main === module) {
+  startServer();
+}
+
+app.startServer = startServer;
 module.exports = app;
