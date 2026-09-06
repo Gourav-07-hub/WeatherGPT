@@ -9,17 +9,19 @@ const RISK_COLORS = {
   Extreme: '#ef4444',
 }
 
-export default function Chat({ lang, input, setInput, onLocationChange }) {
+export default function Chat({ lang, input, setInput, onLocationChange, currentLocation }) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
   const threadRef = useRef(null)
   const inputRef = useRef(input)
   const langRef = useRef(lang)
+  const locationRef = useRef(currentLocation)
   const loadingRef = useRef(false)
   const seenRef = useRef(new Set())
 
   useEffect(() => { inputRef.current = input }, [input])
   useEffect(() => { langRef.current = lang }, [lang])
+  useEffect(() => { locationRef.current = currentLocation }, [currentLocation])
   useEffect(() => { loadingRef.current = loading }, [loading])
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export default function Chat({ lang, input, setInput, onLocationChange }) {
   const doChat = useCallback(
     async (text) => {
       try {
-        const data = await fetchChat(text, langRef.current)
+        const data = await fetchChat(text, langRef.current, locationRef.current)
 
         if (data.replyMode === 'vader') {
           // Vader briefing: render full markdown report with risk badge

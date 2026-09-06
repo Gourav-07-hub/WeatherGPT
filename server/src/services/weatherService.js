@@ -7,25 +7,16 @@ const { getCurrentWeatherWA, getDailyForecastWA } = require('./weatherApiService
 
 /**
  * Fetch current weather for given latitude/longitude
- * Provider priority: WeatherAPI.com -> OpenWeatherMap -> Open-Meteo
+ * Provider priority: Open-Meteo -> WeatherAPI.com -> OpenWeatherMap
+ * (Open-Meteo is free, no key, 28 metrics — matches Vader's correct data)
  */
-async function getCurrentWeather(lat, lon, debug=false) {
-  const cacheKey = `cur|${lat}|${lon}`;
+async function getCurrentWeather(lat, lon, debug=false, preferOpenMeteo=false) {
+  const cacheKey = (preferOpenMeteo ? 'cur|om|' : 'cur|') + `${lat}|${lon}`;
   const cached = cache.get(cacheKey, debug);
   if (cached) return cached;
 
-  const wa = await getCurrentWeatherWA(lat, lon);
-  if (wa) {
-    cache.set(cacheKey, wa, 10 * 60 * 1000);
-    return wa;
-  }
-
-  const owm = await getCurrentWeatherOWM(lat, lon);
-  if (owm) {
-    cache.set(cacheKey, owm, 10 * 60 * 1000);
-    return owm;
-  }
-
+  // Always try Open-Meteo first — Vader-proven correct data; WeatherAPI/OWM are fallback only
+  // (preferOpenMeteo flag kept for backward compat, but Open-Meteo is now primary in all cases)
   const params = new URLSearchParams({
     latitude: lat,
     longitude: lon,
@@ -57,25 +48,74 @@ async function getCurrentWeather(lat, lon, debug=false) {
       'rain',
       'showers',
     ].join(','),
-    timezone: 'auto',
+    timezone: 'Asia/Kolkata',
     forecast_days: 7,
   });
 
-  const res = await fetchOpenMeteo(`${config.OPEN_METEO_BASE}/v1/forecast?${params}`);
-  if (!res.ok) throw new Error(`Open-Meteo error: ${res.status}`);
-  const data = await res.json();
-  cache.set(cacheKey, data.current, 10 * 60 * 1000);
-  return data.current;
+  try {
+    const res = await fetchOpenMeteo(`${config.OPEN_METEO_BASE}/v1/forecast?${params}`);
+    if (res.ok) {
+      const data = await res.json();
+      cache.set(cacheKey, data.current, 10 * 60 * 1000);
+      return data.current;
+    }
+  } catch (e) {
+    logger.warn('Open-Meteo current failed, trying fallback', { lat, lon, error: e.message });
+  }
+
+  // Fallbacks only if Open-Meteo failed
+  const wa = await getCurrentWeatherWA(lat, lon);
+  if (wa) {
+    cache.set(cacheKey, wa, 10 * 60 * 1000);
+    return wa;
+  }
+
+  const owm = await getCurrentWeatherOWM(lat, lon);
+  if (owm) {
+    cache.set(cacheKey, owm, 10 * 60 * 1000);
+    return owm;
+  }
+
+  throw new Error(`All weather providers failed for ${lat},${lon}`);
 }
 
 /**
  * Fetch 7-day daily forecast
- * Provider priority: WeatherAPI.com -> Open-Meteo
+ * Provider priority: Open-Meteo -> WeatherAPI.com
+ * (matches Vader's DAILY_VARS, Asia/Kolkata — correct data)
  */
-async function getDailyForecast(lat, lon, days = 7, debug=false) {
-  const cacheKey = `day|${lat}|${lon}|${days}`;
+async function getDailyForecast(lat, lon, days = 7, debug=false, preferOpenMeteo=false) {
+  const cacheKey = (preferOpenMeteo ? 'day|om|' : 'day|') + `${lat}|${lon}|${days}`;
   const cached = cache.get(cacheKey, debug);
   if (cached) return cached;
+
+  // Open-Meteo first — correct, free, matches Vader
+  try {
+    const params = new URLSearchParams({
+      latitude: lat,
+      longitude: lon,
+      daily: [
+        'weather_code',
+        'temperature_2m_max',
+        'temperature_2m_min',
+        'precipitation_sum',
+        'precipitation_probability_max',
+        'wind_speed_10m_max',
+        'wind_gusts_10m_max',
+      ].join(','),
+      timezone: 'Asia/Kolkata',
+      forecast_days: String(days),
+    });
+
+    const res = await fetchOpenMeteo(`${config.OPEN_METEO_BASE}/v1/forecast?${params}`);
+    if (res.ok) {
+      const data = await res.json();
+      cache.set(cacheKey, data.daily, 30 * 60 * 1000);
+      return data.daily;
+    }
+  } catch (e) {
+    logger.warn('Open-Meteo daily failed, trying fallback', { lat, lon, error: e.message });
+  }
 
   const wa = await getDailyForecastWA(lat, lon, days);
   if (wa) {
@@ -83,25 +123,7 @@ async function getDailyForecast(lat, lon, days = 7, debug=false) {
     return wa;
   }
 
-  const params = new URLSearchParams({
-    latitude: lat,
-    longitude: lon,
-    daily: [
-      'weather_code',
-      'temperature_2m_max',
-      'temperature_2m_min',
-      'precipitation_sum',
-      'wind_speed_10m_max',
-    ].join(','),
-    timezone: 'auto',
-    forecast_days: String(days),
-  });
-
-  const res = await fetchOpenMeteo(`${config.OPEN_METEO_BASE}/v1/forecast?${params}`);
-  if (!res.ok) throw new Error(`Open-Meteo error: ${res.status}`);
-  const data = await res.json();
-  cache.set(cacheKey, data.daily, 30 * 60 * 1000);
-  return data.daily;
+  throw new Error(`All daily providers failed for ${lat},${lon}`);
 }
 
 /**
@@ -113,7 +135,7 @@ async function getHourlyForecast(lat, lon, debug=false) {
   const cached = cache.get(cacheKey, debug);
   if (cached) return cached;
 
-  // Try Open-Meteo first
+  // Try Open-Meteo first — Asia/Kolkata to match Vader
   try {
     const params = new URLSearchParams({
       latitude: lat,
@@ -123,9 +145,10 @@ async function getHourlyForecast(lat, lon, debug=false) {
         'relative_humidity_2m',
         'weather_code',
         'wind_speed_10m',
+        'wind_gusts_10m',
         'precipitation',
       ].join(','),
-      timezone: 'auto',
+      timezone: 'Asia/Kolkata',
       forecast_days: 2,
     });
 

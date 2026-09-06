@@ -22,7 +22,8 @@ export default function App() {
   const [error, setError] = useState(false)
   const [currentLat, setCurrentLat] = useState(null)
   const [currentLon, setCurrentLon] = useState(null)
-  const [currentName, setCurrentName] = useState('Bhopal')
+  const [currentName, setCurrentName] = useState('')
+  const [locationDenied, setLocationDenied] = useState(false)
   const [isF, setIsF] = useState(false)
   const [lang, setLang] = useState('en')
   const [input, setInput] = useState('')
@@ -54,6 +55,7 @@ export default function App() {
       setCurrentLon(data.lon != null ? data.lon : currentLon)
       if (data.name && data.name !== 'Unknown' && data.name !== 'Unknown city') {
         setCurrentName(data.name)
+        setLocationDenied(false)
       }
       return true
     } catch (err) {
@@ -81,18 +83,16 @@ export default function App() {
                 reject(err)
               }
             },
-            async () => {
-              try {
-                await loadWithRetry('Bhopal')
-                resolve()
-              } catch (err) {
-                reject(err)
-              }
+            () => {
+              setLocationDenied(true)
+              setLoading(false)
+              resolve()
             }
           )
         })
       } else {
-        await loadWithRetry('Bhopal')
+        setLocationDenied(true)
+        setLoading(false)
       }
     }
 
@@ -155,7 +155,7 @@ export default function App() {
       <div className='app-container'>
         <header className='top-bar glass'>
           <Link to='/' className='brand'>WeatherGPT</Link>
-          <div className='location-name'>{currentName}</div>
+          {currentName && <div className='location-name'>{currentName}</div>}
           <div className='controls'>
             <div className='utils'>
               <div className='utils-bar'>
@@ -193,47 +193,49 @@ export default function App() {
           </div>
         </header>
 
-        <Hero weather={weather} isLoading={loading} isF={isF} />
+        {(loading || weather) && <Hero weather={weather} isLoading={loading} isF={isF} />}
 
         <div className='content-below'>
-          {isAuthenticated ? (
-            <div className='prompt-bar glass'>
-              <form id='chat-form'>
-                <input
-                  ref={chatInputRef}
-                  type='text'
-                  id='chat-input'
-                  placeholder='ask WeatherGPT anything…'
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  autoComplete='off'
-                />
-                <button type='button' id='mic-btn' className='mic-btn'>🎤</button>
-                <button type='submit' id='send-btn' className={loading ? 'loading' : ''}>
-                  <span className='btn-text'>Get forecast</span>
-                  <span className='loader' />
+          <div className='prompt-center'>
+            {isAuthenticated ? (
+              <div className='prompt-bar glass'>
+                <form id='chat-form'>
+                  <input
+                    ref={chatInputRef}
+                    type='text'
+                    id='chat-input'
+                    placeholder='ask WeatherGPT anything…'
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    autoComplete='off'
+                  />
+                  <button type='button' id='mic-btn' className='mic-btn'>🎤</button>
+                  <button type='submit' id='send-btn' className={loading ? 'loading' : ''}>
+                    <span className='btn-text'>Get forecast</span>
+                    <span className='loader' />
+                  </button>
+                </form>
+                {showOnboarding && <div className='onboarding-hint'>Try asking "will it rain today?"</div>}
+              </div>
+            ) : (
+              <div className='prompt-bar glass auth-prompt'>
+                <span className='auth-prompt-text'>🔒 Sign in to ask WeatherGPT anything</span>
+                <button type='button' className='auth-submit' onClick={() => navigate('/auth')}>
+                  <span className='btn-text'>Sign in</span>
                 </button>
-              </form>
-              {showOnboarding && <div className='onboarding-hint'>Try asking "will it rain today?"</div>}
-            </div>
-          ) : (
-            <div className='prompt-bar glass auth-prompt'>
-              <span className='auth-prompt-text'>🔒 Sign in to ask WeatherGPT anything</span>
-              <button type='button' className='auth-submit' onClick={() => navigate('/auth')}>
-                <span className='btn-text'>Sign in</span>
-              </button>
-            </div>
-          )}
+              </div>
+            )}
 
-          {isAuthenticated && (
-            <div className='chips-container'>
-              {SUGGESTIONS.map((s, i) => (
-                <button type='button' className='chip' key={i} onClick={() => handleSuggestion(s)}>
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
+            {isAuthenticated && (
+              <div className='chips-container'>
+                {SUGGESTIONS.map((s, i) => (
+                  <button type='button' className='chip' key={i} onClick={() => handleSuggestion(s)}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className='data-streams'>
             {error ? (
@@ -242,6 +244,11 @@ export default function App() {
                 <button className='chip' onClick={() => loadWeather(currentName)}>
                   Retry
                 </button>
+              </div>
+            ) : locationDenied && !weather ? (
+              <div className='location-prompt'>
+                Search a city above (e.g. "what is the weather in Delhi?") or allow location
+                access to see weather for where you are.
               </div>
             ) : (
               <>
@@ -257,6 +264,7 @@ export default function App() {
               input={input}
               setInput={setInput}
               onLocationChange={handleLocationChange}
+              currentLocation={currentName}
             />
           )}
         </div>

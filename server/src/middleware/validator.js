@@ -24,6 +24,9 @@ const validators = {
     if (req.body.lang) {
       if (!['en', 'hi', 'ta', 'bn', 'te', 'mr', 'gu'].includes(req.body.lang)) throw new Error('Unsupported lang code');
     }
+    if (req.body.mode != null && req.body.mode !== '') {
+      if (typeof req.body.mode !== 'string' || !['vader', 'weather', 'auto'].includes(req.body.mode.toLowerCase().trim())) throw new Error('Unsupported chat mode');
+    }
   }
 };
 module.exports = { validate, validators };

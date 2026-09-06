@@ -142,11 +142,11 @@ function buildVaderReply(weather, areaName) {
 
   const lines = [];
 
-  // Risk level
+  // Risk level — 1-2 flags = Moderate, 3 = High, 4+ = Extreme (prevents every monsoon city = High)
   let riskLevel = 'Low';
-  if (hazardFlags.length >= 3) riskLevel = 'Extreme';
-  else if (hazardFlags.length === 2) riskLevel = 'High';
-  else if (hazardFlags.length === 1) riskLevel = 'Moderate';
+  if (hazardFlags.length >= 4) riskLevel = 'Extreme';
+  else if (hazardFlags.length >= 3) riskLevel = 'High';
+  else if (hazardFlags.length >= 1) riskLevel = 'Moderate';
 
   lines.push(`🚨 **Vader Intelligence Report**`);
   lines.push('');

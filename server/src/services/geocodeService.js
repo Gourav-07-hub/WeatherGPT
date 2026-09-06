@@ -26,4 +26,26 @@ async function geocode(query, debug=false) {
   return result;
 }
 
-module.exports = { geocode };
+async function reverseGeocode(lat, lon, debug = false) {
+  const cacheKey = `geor|${Number(lat).toFixed(4)},${Number(lon).toFixed(4)}`;
+  const cached = cache.get(cacheKey, debug);
+  if (cached) return cached;
+  const url = new URL(`${NOMINATIM_BASE}/reverse`);
+  url.searchParams.set('lat', String(lat));
+  url.searchParams.set('lon', String(lon));
+  url.searchParams.set('format', 'json');
+  url.searchParams.set('zoom', '10');
+  url.searchParams.set('addressdetails', '1');
+
+  const res = await fetchNominatim(url.toString(), {
+    headers: { 'User-Agent': 'weathergpt-demo/1.0' },
+  });
+  if (!res.ok) throw new Error(`Reverse geocoding error: ${res.status}`);
+  const data = await res.json();
+  if (!data || !data.display_name) return null;
+  const result = { lat: parseFloat(lat), lon: parseFloat(lon), name: data.display_name };
+  cache.set(cacheKey, result, 24 * 60 * 60 * 1000);
+  return result;
+}
+
+module.exports = { geocode, reverseGeocode };

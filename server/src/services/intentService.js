@@ -6,6 +6,11 @@
 function detectIntent(text) {
   const t = text.toLowerCase();
 
+  // Vader — disaster intelligence briefing (explicit request)
+  if (/\b(vader|briefing|brief|intelligence|situation report|ground report|live report|full report|navic|geospatial|bhuvan|incois)\b/.test(t)) {
+    return 'vader';
+  }
+
   // Alerts / extreme weather
   if (/\b(alerts?|warning|extreme|cyclone|storm|flood|heavy rain|heatwave|thunder|disaster)\b/.test(t)) {
     return 'alerts';
@@ -39,6 +44,11 @@ function stripTimeWords(s) {
 
 function extractLocation(text) {
   const t = text.toLowerCase().replace(/[?.,]/g, '').trim();
+
+  // 0) Pure greetings / chit-chat -> no location
+  if (/^(hi|hello|hey|yo|namaste|hola|good\s*(morning|afternoon|evening|night))\b.*$/i.test(t)) {
+    return '';
+  }
 
   // 1) Direct preposition match: "<phrase> in/at/for <location>"
   const prepMatch = t.match(/\b(?:in|at|for)\s+([a-z][a-z0-9 ]{0,40})$/i);

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getCurrentWeather, getDailyForecast, getHourlyForecast } = require('../services/weatherService');
-const { geocode } = require('../services/geocodeService');
+const { geocode, reverseGeocode } = require('../services/geocodeService');
 const asyncWrapper = require('../middleware/asyncWrapper');
 const { validate, validators } = require('../middleware/validator');
 
@@ -22,6 +22,9 @@ router.get('/', asyncWrapper(async (req, res) => {
     location = geo;
   } else if (!lat || !lon) {
     return res.status(400).json({ error: 'Provide q or lat/lon' });
+  } else {
+    const rev = await reverseGeocode(Number(lat), Number(lon), req.query.debug === 'true');
+    if (rev) location.name = rev.name;
   }
   
   const current = await getCurrentWeather(location.lat, location.lon, req.query.debug === 'true');

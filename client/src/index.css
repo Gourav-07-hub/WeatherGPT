@@ -325,6 +325,16 @@ body.state-clear-night #sky-canvas {
   max-width: 680px;
   margin: 0 auto;
   padding: 0 var(--text-md) 60px;
+  display: flex;
+  flex-direction: column;
+}
+
+.prompt-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: var(--text-md);
 }
 
 /* ============================================================
@@ -759,6 +769,16 @@ body.state-clear-night #sky-canvas {
   z-index: 11;
   border: 1px solid var(--border);
   animation: hint-fade 6s ease forwards;
+}
+
+.location-prompt {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: var(--text-md);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  background: var(--bg-overlay);
 }
 
 @keyframes hint-fade {

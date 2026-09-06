@@ -9,11 +9,13 @@ export async function fetchWeather(query, isCoords = false) {
   return res.json()
 }
 
-export async function fetchChat(message, lang) {
+export async function fetchChat(message, lang, location, mode) {
+  const body = { message, lang, location }
+  if (mode) body.mode = mode
   const res = await fetch(`${API}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, lang }),
+    body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error('Chat API error')
   return res.json()

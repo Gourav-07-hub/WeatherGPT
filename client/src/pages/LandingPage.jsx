@@ -5,7 +5,7 @@ import useScrollReveal from '../hooks/useScrollReveal'
 
 const FEATURES = [
   { icon: '⚡', title: 'Real-time Weather', desc: 'Live conditions, hourly and 7-day forecasts powered by Open-Meteo.' },
-  { icon: '🗣️', title: 'Natural Language', desc: 'Ask anything in plain English or Hindi — "Will it rain in Bhopal tomorrow?"' },
+  { icon: '🗣️', title: 'Natural Language', desc: 'Ask anything in plain English or Hindi — "Will it rain near me tomorrow?"' },
   { icon: '🌍', title: 'Multilingual', desc: 'Support for Indian languages so forecasts reach everyone, everywhere.' },
   { icon: '🎙️', title: 'Voice Enabled', desc: 'Speak your query — designed for rural accessibility and hands-free use.' },
   { icon: '⚠️', title: 'Extreme Alerts', desc: 'Early warnings for storms, floods, and cyclones with subscription alerts.' },
@@ -115,9 +115,9 @@ export default function LandingPage() {
   const divider1Ref = useScrollReveal()
   const divider2Ref = useScrollReveal()
   const magneticRef = useMagnetic()
-  const terminalUserRef = useTypewriter('Will it rain in Bhopal tomorrow?', 40, 1000)
+  const terminalUserRef = useTypewriter('Will it rain near me tomorrow?', 40, 1000)
   const terminalBotRef = useTypewriter(
-    'Yes, light rain expected tomorrow in Bhopal from 2pm–8pm. Temperature: 28°C. Carry an umbrella.',
+    'Yes, light rain likely from 2pm–8pm where you are. Temperature: 28°C. Carry an umbrella.',
     25,
     2800
   )
