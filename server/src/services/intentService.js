@@ -31,6 +31,11 @@ function detectIntent(text) {
     return 'climate';
   }
 
+  // Sunrise / Sunset
+  if (/\b(sunrise|sunset|sun rise|sun set|dawn|dusk)\b/.test(t)) {
+    return 'sun';
+  }
+
   // Default: treat as current weather
   return 'current';
 }
@@ -43,7 +48,7 @@ function stripTimeWords(s) {
 }
 
 function extractLocation(text) {
-  const t = text.toLowerCase().replace(/[?.,]/g, '').trim();
+  const t = text.toLowerCase().replace(/[?.,!]/g, '').trim();
 
   // 0) Pure greetings / chit-chat -> no location
   if (/^(hi|hello|hey|yo|namaste|hola|good\s*(morning|afternoon|evening|night))\b.*$/i.test(t)) {
@@ -61,20 +66,26 @@ function extractLocation(text) {
 
   // 2) Strip leading weather-intent phrasing
   let s = t.replace(
-    /^(what('s| is| are)? the )?(weather|temperature|forecast|climate|condition|rain|raining|alerts?|warning|warnings|show me|report|trend)s?\s*(in|at|for)?\s*/i,
+    /^(what('s| is| are)? the )?(weather|temperature|forecast|climate|condition|rain|raining|alerts?|warning|warnings|show me|report|trend|sunrise|sunset)s?\s*(in|at|for)?\s*/i,
     ''
   );
 
-  // 3) Strip trailing time/filler words
+  // 3) Strip trailing weather keywords
+  s = s.replace(
+    /\s+(weather|temperature|forecast|climate|condition|rain|raining|alerts?|warning|warnings|report|trend|sunrise|sunset)s?$/i,
+    ''
+  );
+
+  // 4) Strip trailing time/filler words
   s = stripTimeWords(s);
 
-  // 4) Remove remaining generic question wrappers -> no location
+  // 5) Remove remaining generic question wrappers -> no location
   if (/^(any|will|would|is|are|does|do|can|should|how|what|tell|give)\b.*$/i.test(s)) {
     return '';
   }
 
-  // 5) Pure weather keywords left (no real location) -> default location
-  const fillerWords = /^(weather|forecast|climate|trend|trends|alerts?|warning|warnings|rain|raining|temperature|report|condition)s?$/i;
+  // 6) Pure weather keywords left (no real location) -> default location
+  const fillerWords = /^(weather|forecast|climate|trend|trends|alerts?|warning|warnings|rain|raining|temperature|report|condition|sunrise|sunset)s?$/i;
   if (s && s.split(/\s+/).every((w) => fillerWords.test(w))) {
     return '';
   }

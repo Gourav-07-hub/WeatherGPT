@@ -49,6 +49,7 @@ async function getCurrentWeather(lat, lon, debug=false, preferOpenMeteo=false) {
       'precipitation',
       'rain',
       'showers',
+      'is_day',
     ].join(','),
     timezone: 'Asia/Kolkata',
     forecast_days: 7,
@@ -106,8 +107,10 @@ async function getDailyForecast(lat, lon, days = 7, debug=false, preferOpenMeteo
         'precipitation_probability_max',
         'wind_speed_10m_max',
         'wind_gusts_10m_max',
+        'sunrise',
+        'sunset',
       ].join(','),
-      timezone: 'Asia/Kolkata',
+      timezone: 'auto',
       forecast_days: String(days),
     });
 
@@ -153,6 +156,7 @@ async function getHourlyForecast(lat, lon, debug=false) {
         'wind_speed_10m',
         'wind_gusts_10m',
         'precipitation',
+        'is_day',
       ].join(','),
       timezone: 'Asia/Kolkata',
       forecast_days: 2,

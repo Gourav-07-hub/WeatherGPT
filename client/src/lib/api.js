@@ -13,8 +13,17 @@ export async function fetchWeather(query, isCoords = false) {
   const promise = (async () => {
     const res = await fetch(url)
     if (!res.ok) {
-      const txt = await res.text().catch(() => '')
-      throw new Error(`API error ${res.status}${txt ? ': ' + txt.slice(0,200) : ''}`)
+      let msg = `API error ${res.status}`
+      try {
+        const data = await res.json()
+        if (data && data.error) msg = data.error
+      } catch {
+        const txt = await res.text().catch(() => '')
+        if (txt) msg = `${msg}: ${txt.slice(0, 100)}`
+      }
+      const err = new Error(msg)
+      err.status = res.status
+      throw err
     }
     return res.json()
   })()

@@ -9,7 +9,7 @@ const RISK_COLORS = {
   Extreme: '#ef4444',
 }
 
-export default function Chat({ lang, input, setInput, onLocationChange, currentLocation }) {
+export default function Chat({ lang, input, setInput, onLocationChange, currentLocation, onLoadingChange }) {
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
   const threadRef = useRef(null)
@@ -22,7 +22,10 @@ export default function Chat({ lang, input, setInput, onLocationChange, currentL
   useEffect(() => { inputRef.current = input }, [input])
   useEffect(() => { langRef.current = lang }, [lang])
   useEffect(() => { locationRef.current = currentLocation }, [currentLocation])
-  useEffect(() => { loadingRef.current = loading }, [loading])
+  useEffect(() => {
+    loadingRef.current = loading
+    onLoadingChange?.(loading)
+  }, [loading, onLoadingChange])
 
   useEffect(() => {
     if (threadRef.current) {

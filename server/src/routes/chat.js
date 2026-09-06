@@ -28,6 +28,15 @@ function buildNLResponse(intent, locationName, weather) {
     if (!bad.length) return `No extreme weather alerts in the next 24h for ${locationName}.`;
     return `Alert for ${locationName}: ${bad.length} hour(s) with thunderstorms or heavy rain in the next 24h.`;
   }
+  if (intent === 'sun') {
+    const { daily } = weather;
+    const sunrise = daily?.sunrise?.[0] ? daily.sunrise[0].substring(11, 16) : null;
+    const sunset = daily?.sunset?.[0] ? daily.sunset[0].substring(11, 16) : null;
+    if (sunrise && sunset) {
+      return `For ${locationName}: 🌅 Sunrise is at ${sunrise}, and 🌇 sunset is at ${sunset}.`;
+    }
+    return `Sunrise and sunset times are currently not available for ${locationName}.`;
+  }
   const c = weather.current;
   const w = describe(c.weather_code);
   return `${locationName}: ${w.icon} ${w.label}, ${c.temperature_2m}°C (feels like ${c.apparent_temperature}°C), humidity ${c.relative_humidity_2m}%, wind ${c.wind_speed_10m} km/h.`;
@@ -183,7 +192,7 @@ router.post('/', validate(validators.chat), asyncWrapper(async (req, res) => {
   // ── Standard WeatherGPT path (fallback when the briefing cannot be built) ─
   let weather;
   try {
-    if (intent === 'forecast') {
+    if (intent === 'forecast' || intent === 'sun') {
       weather = { daily: await getDailyForecast(location.lat, location.lon, 7, req.query.debug === 'true') };
     } else if (intent === 'alerts') {
       weather = { hourly: await getHourlyForecast(location.lat, location.lon, req.query.debug === 'true') };

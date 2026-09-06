@@ -22,9 +22,15 @@ export default function HourlyForecast({ hourly, isF }) {
 
   const slices = []
   for (let i = startIndex; i < startIndex + 24 && i < hourly.time.length; i++) {
+    const timeStr = hourly.time[i]
+    const hour = parseInt(timeStr.substring(11, 13), 10)
+    const isDay = (hourly.is_day && hourly.is_day[i] !== undefined)
+      ? hourly.is_day[i] === 1
+      : (hour >= 6 && hour < 19)
+
     slices.push({
-      time: hourly.time[i].substring(11, 16),
-      icon: getWeatherIcon(hourly.weather_code[i]),
+      time: timeStr.substring(11, 16),
+      icon: getWeatherIcon(hourly.weather_code[i], isDay),
       temp: Math.round(hourly.temperature_2m[i]),
     })
   }
