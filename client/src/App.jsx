@@ -27,6 +27,7 @@ export default function App() {
   const [isF, setIsF] = useState(false)
   const [lang, setLang] = useState('en')
   const [input, setInput] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [pendingSuggestion, setPendingSuggestion] = useState(null)
   const [alertsOpen, setAlertsOpen] = useState(false)
   const [chartOpen, setChartOpen] = useState(false)
@@ -133,6 +134,14 @@ export default function App() {
     setShowOnboarding(false)
   }
 
+  const handleSearch = (e) => {
+    e.preventDefault()
+    const q = searchQuery.trim()
+    if (!q) return
+    loadWeather(q)
+    setSearchQuery('')
+  }
+
   return (
     <>
       <SkyBackground weatherCode={weather?.current?.weather_code ?? 0} />
@@ -178,6 +187,19 @@ export default function App() {
         </header>
 
         {(loading || weather) && <Hero weather={weather} isLoading={loading} isF={isF} />}
+
+        <form className='location-search glass' onSubmit={handleSearch}>
+          <input
+            type='text'
+            placeholder='Search city (e.g. Delhi, London)...'
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label='Search city'
+          />
+          <button type='submit' disabled={loading || !searchQuery.trim()}>
+            Search
+          </button>
+        </form>
 
         <div className='content-below'>
           <div className='prompt-center'>
